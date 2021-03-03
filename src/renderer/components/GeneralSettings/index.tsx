@@ -15,11 +15,15 @@ import {
 import { configureInitialInstallPath } from "renderer/settings";
 import * as packageInfo from '../../../../package.json';
 import * as actionTypes from '../../redux/actionTypes';
+import { useTranslation } from "react-i18next";
+import { supportedLanguages } from '../../i18n/config';
 
 const settings = new Store;
 
 // eslint-disable-next-line no-unused-vars
 function InstallPathSettingItem(props: { path: string, setPath: (path: string) => void }): JSX.Element {
+    const { t } = useTranslation();
+
     async function handleClick() {
         const path = await setupInstallPath();
 
@@ -30,13 +34,14 @@ function InstallPathSettingItem(props: { path: string, setPath: (path: string) =
 
     return (
         <SettingsItem>
-            <SettingItemName>Install Directory</SettingItemName>
+            <SettingItemName>{t('SettingsSection.DownloadSettings.InstallDirectory')}</SettingItemName>
             <SettingItemContent onClick={handleClick}>{props.path}</SettingItemContent>
         </SettingsItem>
     );
 }
 
 const DisableWarningSettingItem = (props: {disableWarning: boolean, setDisableWarning: CallableFunction}) => {
+    const { t } = useTranslation();
     const handleClick = () => {
         const newState = !props.disableWarning;
         props.setDisableWarning(newState);
@@ -45,7 +50,7 @@ const DisableWarningSettingItem = (props: {disableWarning: boolean, setDisableWa
 
     return (
         <div className="flex items-center mb-2 mt-2">
-            <span className="text-base">Disable Version Warnings</span>
+            <span className="text-base">{t('SettingsSection.GeneralSettings.DisableVersionWarnings')}</span>
             <input
                 type="checkbox"
                 checked={props.disableWarning}
@@ -77,6 +82,7 @@ const DisableLiveryWarningItem = (props: {disableWarning: boolean, setDisableWar
 };
 
 const UseCdnSettingItem = (props: {useCdnCache: boolean, setUseCdnCache: CallableFunction}) => {
+    const { t } = useTranslation();
     const handleClick = () => {
         const newState = !props.useCdnCache;
         props.setUseCdnCache(newState);
@@ -85,7 +91,7 @@ const UseCdnSettingItem = (props: {useCdnCache: boolean, setUseCdnCache: Callabl
 
     return (
         <div className="flex items-center mb-2 mt-2">
-            <span className="text-base">Use CDN (Faster Downloads)</span>
+            <span className="text-base">{t('SettingsSection.DownloadSettings.UseCDN')}</span>
             <input
                 type="checkbox"
                 checked={props.useCdnCache}
@@ -96,7 +102,38 @@ const UseCdnSettingItem = (props: {useCdnCache: boolean, setUseCdnCache: Callabl
     );
 };
 
+const LanguageSettingsItem = () => {
+    const { t, i18n } = useTranslation();
+
+    const languages: {value: string, name: string}[] = [];
+    supportedLanguages.forEach(element => languages.push({ value: element, name: t('Languages.' + element) }));
+
+    const handleSelect = (language: string) => {
+        i18n.changeLanguage(language);
+        settings.set('mainSettings.lang', language);
+    };
+
+    return (
+        <div className="flex flex-row justify-between my-1 mr-2">
+            <SettingItemName>{t('SettingsSection.GeneralSettings.Language')}</SettingItemName>
+            <select
+                value={i18n.language}
+                onChange={event => handleSelect(event.currentTarget.value)}
+                name="Language"
+                id="language-list"
+                className="text-base text-black w-40 outline-none"
+            >
+                {languages.map(language =>
+                    <option value={language.value} key={language.value}>{language.name}</option>)
+                }
+            </select>
+        </div>
+    );
+};
+
 function index(): JSX.Element {
+    const { t, i18n } = useTranslation();
+
     const [installPath, setInstallPath] = useState<string>(settings.get('mainSettings.msfsPackagePath') as string);
     const [disableVersionWarning, setDisableVersionWarning] = useState<boolean>(settings.get('mainSettings.disableExperimentalWarning') as boolean);
     const [disableLiveryWarning, setDisableLiveryWarning] = useState<boolean>(settings.get('mainSettings.disabledIncompatibleLiveriesWarning') as boolean);
@@ -104,6 +141,7 @@ function index(): JSX.Element {
 
     const handleReset = async () => {
         settings.clear();
+        await i18n.changeLanguage('en');
         setInstallPath(await configureInitialInstallPath());
         settings.set('mainSettings.disableExperimentalWarning', false);
         settings.set('mainSettings.useCdnCache', true);
@@ -113,17 +151,18 @@ function index(): JSX.Element {
     return (
         <>
             <Container>
-                <PageTitle>General Settings</PageTitle>
+                <PageTitle>{t('SettingsSection.GeneralSettings.Name')}</PageTitle>
                 <SettingsItems>
                     <InstallPathSettingItem path={installPath} setPath={setInstallPath} />
                     <DisableWarningSettingItem disableWarning={disableVersionWarning} setDisableWarning={setDisableVersionWarning} />
                     <DisableLiveryWarningItem disableWarning={disableLiveryWarning} setDisableWarning={setDisableLiveryWarning} />
                     <UseCdnSettingItem useCdnCache={useCdnCache} setUseCdnCache={setUseCdnCache} />
+                    <LanguageSettingsItem />
                 </SettingsItems>
             </Container>
             <InfoContainer>
                 <InfoButton onClick={showChangelog}>{packageInfo.version}</InfoButton>
-                <ResetButton onClick={handleReset}>Reset settings to default</ResetButton>
+                <ResetButton onClick={handleReset}>{t('SettingsSection.GeneralSettings.ResetToDefault')}</ResetButton>
             </InfoContainer>
         </>
     );
